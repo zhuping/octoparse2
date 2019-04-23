@@ -1,0 +1,12 @@
+{
+  "name": "octoparse2",
+  "version": "0.0.1",
+  "description": "基于 rich-text 的跨平台富文本解析",
+  "main": "index.js",
+  "scripts": {
+    "dev": "rollup -w -c"
+  },
+  "repository": "https://github.com/zhuping/octoparse2.git",
+  "author": "zhuping.zp",
+  "license": "MIT"
+}
