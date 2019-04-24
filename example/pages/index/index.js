@@ -20,8 +20,8 @@ Page({
     // let article = `<span>你好</span>`;
     let article = `<p style="text-align:center;">
     <span>文本1</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span>文本2</span>
-    <img src="http://haitao.nos.netease.com/f448c4490afc4b0484248b1e6035991d1529980559392jiv2x73410299.jpg?imageView&amp;quality=98&amp;crop=0_0_750_500" />
-    </p>`;
+    <img src="http://haitao.nos.netease.com/f448c4490afc4b0484248b1e6035991d1529980559392jiv2x73410299.jpg?imageView&amp;quality=98&amp;crop=0_0_750_500" style="display:none;" />
+    </p><p>123</p>`;
 
     let html = octoparse.parse(article);
     console.log('======', html)
@@ -30,7 +30,7 @@ Page({
       this.setData({
         userInfo: app.globalData.userInfo,
         hasUserInfo: true,
-        nodes: [html]
+        nodes: html
       })
     } else if (this.data.canIUse){
       // 由于 getUserInfo 是网络请求，可能会在 Page.onLoad 之后才返回

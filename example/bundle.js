@@ -259,20 +259,12 @@ function parseHTML(html, options) {
   }
 }
 
-function createASTElement(tag, attrs, parent) {
-  return {
-    type: 'node',
-    name: tag,
-    attrs: makeAttrsMap(attrs),
-    // parent,
-    children: []
-  };
-}
-
 function parse(template, options) {
   const stack = [];
-  let root;
-  let currentParent;
+  let root = {
+    node: 'root',
+    children: []
+  };
 
   function trimHTML(template) {
     return template
@@ -282,67 +274,62 @@ function parse(template, options) {
       .replace(/[ ]+</ig, '<');
   }
 
-  function closeElement(element) {
-    if (currentParent) {
-      currentParent.children.push(element);
-      // element.parent = currentParent;
-    }
-  }
-
   parseHTML(trimHTML(template), {
     start(tag, attrs, unary, start, end) {
-      let element = createASTElement(tag, attrs, currentParent);
-      if (!root) {
-        root = element;
+      let element = {
+        type: 'node',
+        name: tag
+      };
+      if (attrs.length !== 0) {
+        element.attrs = makeAttrsMap(attrs);
       }
 
-      if (!unary) {
-        currentParent = element;
-        stack.push(element);
+      if (unary) {
+        let parent = stack[0] || root;
+        if (parent.children === undefined) {
+          parent.children = [];
+        }
+        parent.children.push(element);
       } else {
-        closeElement(element);
+        stack.unshift(element);
       }
     },
 
     end(tag, start, end) {
-      const element = stack[stack.length - 1];
-      // pop stack
-      stack.length -= 1;
-      currentParent = stack[stack.length - 1];
-      closeElement(element);
+      let element = stack.shift();
+      if (element.name !== tag) {
+        console.warn(`invalid state: mismatch end tag.`);
+      }
+
+      if (stack.length === 0) {
+        root.children.push(element);
+      } else {
+        let parent = stack[0];
+        if (parent.children === undefined) {
+          parent.children = [];
+        }
+        parent.children.push(element);
+      }
     },
 
     chars(text, start, end) {
-      if (!currentParent) {
-        if ((text = text.trim())) {
-          console.warn(`text "${text}" outside root element will be ignored.`);
+      let child = {
+        type: 'text',
+        text
+      };
+      if (stack.length === 0) {
+        root.children.push(child);
+      } else {
+        let parent = stack[0];
+        if (parent.children === undefined) {
+          parent.children = [];
         }
-        return;
+        parent.children.push(child);
       }
-
-      const children = currentParent.children;
-      let child;
-
-      if (text && text !== ' ') {
-        child = {
-          type: 'text',
-          text
-        };
-      } else if (text !== ' ' || !children.length || children[children.length - 1].text !== ' ') {
-        child = {
-          type: 3,
-          text
-        };
-      }
-
-      if (child) {
-        children.push(child);
-      }
-
     }
   });
 
-  return root;
+  return root.children;
 }
 
 function makeAttrsMap(attrs) {
