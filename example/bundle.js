@@ -23,6 +23,8 @@ const isUnaryTag = makeMap(
 
 const isPlainTextElement = makeMap('script,style,textarea', true);
 
+const isIgnoreNewlineTag = makeMap('pre,textarea', true);
+
 const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/;
 const ncname = `[a-zA-Z_][\\-\\.0-9_a-zA-Z]*`;
 const qnameCapture = `((?:${ncname}\\:)?${ncname})`;
@@ -32,6 +34,25 @@ const endTag = new RegExp(`^<\\/${qnameCapture}[^>]*>`);
 const doctype = /^<!DOCTYPE [^>]+>/i;
 const comment = /^<!\--/;
 const conditionalComment = /^<!\[/;
+
+const decodingMap = {
+  '&lt;': '<',
+  '&gt;': '>',
+  '&quot;': '"',
+  '&amp;': '&',
+  '&#10;': '\n',
+  '&#9;': '\t',
+  '&#39;': "'"
+};
+const encodedAttr = /&(?:lt|gt|quot|amp|#39);/g;
+const encodedAttrWithNewLines = /&(?:lt|gt|quot|amp|#39|#10|#9);/g;
+
+const shouldIgnoreFirstNewline = (tag, html) => tag && isIgnoreNewlineTag(tag) && html[0] === '\n';
+
+function decodeAttr (value, shouldDecodeNewlines) {
+  const re = shouldDecodeNewlines ? encodedAttrWithNewLines : encodedAttr;
+  return value.replace(re, match => decodingMap[match]);
+}
 
 function parseHTML(html, options) {
   const stack = [];   // 存储被 parse 过的元素
@@ -85,6 +106,9 @@ function parseHTML(html, options) {
         const startTagMatch = parseStartTag();
         if (startTagMatch) {
           handleStartTag(startTagMatch);
+          if (shouldIgnoreFirstNewline(startTagMatch.tagName, html)) {
+            advance(1);
+          }
           continue;
         }
       }
@@ -174,17 +198,17 @@ function parseHTML(html, options) {
       const value = args[3] || args[4] || args[5] || '';
       attrs[i] = {
         name: args[1],
-        value
+        value: decodeAttr(value, true)
       };
 
-      if (!unary) {
-        stack.push({ tag: tagName, lowerCasedTag: tagName.toLowerCase(), attrs: attrs, start: match.start, end: match.end });
-        lastTag = tagName;
-      }
+    }
+    if (!unary) {
+      stack.push({ tag: tagName, lowerCasedTag: tagName.toLowerCase(), attrs: attrs, start: match.start, end: match.end });
+      lastTag = tagName;
+    }
 
-      if (options.start) {
-        options.start(tagName, attrs, unary, match.start, match.end);
-      }
+    if (options.start) {
+      options.start(tagName, attrs, unary, match.start, match.end);
     }
   }
 
@@ -237,12 +261,10 @@ function parseHTML(html, options) {
 
 function createASTElement(tag, attrs, parent) {
   return {
-    type: 1,
-    tag,
-    attrsList: attrs,
-    attrsMap: makeAttrsMap(attrs),
-    rawAttrsMap: {},
-    parent,
+    type: 'node',
+    name: tag,
+    attrs: makeAttrsMap(attrs),
+    // parent,
     children: []
   };
 }
@@ -252,16 +274,22 @@ function parse(template, options) {
   let root;
   let currentParent;
 
+  function trimHTML(template) {
+    return template
+      .replace(/\r?\n+/g, '')
+      .replace(/\/\*.*?\*\//ig, '')
+      .replace(/&nbsp;/g, '\xa0')
+      .replace(/[ ]+</ig, '<');
+  }
+
   function closeElement(element) {
-    if (!stack.length && element !== root) {
-      if (currentParent) {
-        currentParent.children.push(element);
-        element.parent = currentParent;
-      }
+    if (currentParent) {
+      currentParent.children.push(element);
+      // element.parent = currentParent;
     }
   }
 
-  parseHTML(template, {
+  parseHTML(trimHTML(template), {
     start(tag, attrs, unary, start, end) {
       let element = createASTElement(tag, attrs, currentParent);
       if (!root) {
@@ -285,19 +313,32 @@ function parse(template, options) {
     },
 
     chars(text, start, end) {
-      const children = currentParent.children;
-
-    },
-
-    comment(text, start, end) {
-      if (currentParent) {
-        const child = {
-          type: 3,
-          text,
-          isComment: true
-        };
-        currentParent.children.push(child);
+      if (!currentParent) {
+        if ((text = text.trim())) {
+          console.warn(`text "${text}" outside root element will be ignored.`);
+        }
+        return;
       }
+
+      const children = currentParent.children;
+      let child;
+
+      if (text && text !== ' ') {
+        child = {
+          type: 'text',
+          text
+        };
+      } else if (text !== ' ' || !children.length || children[children.length - 1].text !== ' ') {
+        child = {
+          type: 3,
+          text
+        };
+      }
+
+      if (child) {
+        children.push(child);
+      }
+
     }
   });
 

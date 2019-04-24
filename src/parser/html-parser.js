@@ -1,6 +1,7 @@
 import { 
   isUnaryTag,
-  isPlainTextElement
+  isPlainTextElement,
+  isIgnoreNewlineTag
 } from '../util/index';
 
 const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/;
@@ -12,6 +13,25 @@ const endTag = new RegExp(`^<\\/${qnameCapture}[^>]*>`);
 const doctype = /^<!DOCTYPE [^>]+>/i;
 const comment = /^<!\--/;
 const conditionalComment = /^<!\[/;
+
+const decodingMap = {
+  '&lt;': '<',
+  '&gt;': '>',
+  '&quot;': '"',
+  '&amp;': '&',
+  '&#10;': '\n',
+  '&#9;': '\t',
+  '&#39;': "'"
+};
+const encodedAttr = /&(?:lt|gt|quot|amp|#39);/g;
+const encodedAttrWithNewLines = /&(?:lt|gt|quot|amp|#39|#10|#9);/g;
+
+const shouldIgnoreFirstNewline = (tag, html) => tag && isIgnoreNewlineTag(tag) && html[0] === '\n';
+
+function decodeAttr (value, shouldDecodeNewlines) {
+  const re = shouldDecodeNewlines ? encodedAttrWithNewLines : encodedAttr;
+  return value.replace(re, match => decodingMap[match]);
+}
 
 export function parseHTML(html, options) {
   const stack = [];   // 存储被 parse 过的元素
@@ -65,6 +85,9 @@ export function parseHTML(html, options) {
         const startTagMatch = parseStartTag();
         if (startTagMatch) {
           handleStartTag(startTagMatch);
+          if (shouldIgnoreFirstNewline(startTagMatch.tagName, html)) {
+            advance(1);
+          }
           continue;
         }
       }
@@ -148,10 +171,6 @@ export function parseHTML(html, options) {
     const tagName = match.tagName;
     const unarySlash = match.unarySlash;
 
-    if (expectHTML) {
-      // TODO
-    }
-
     const unary = !!unarySlash;
     const l = match.attrs.length;
     const attrs = new Array(l);
@@ -160,17 +179,17 @@ export function parseHTML(html, options) {
       const value = args[3] || args[4] || args[5] || '';
       attrs[i] = {
         name: args[1],
-        value
+        value: decodeAttr(value, true)
       };
 
-      if (!unary) {
-        stack.push({ tag: tagName, lowerCasedTag: tagName.toLowerCase(), attrs: attrs, start: match.start, end: match.end });
-        lastTag = tagName;
-      }
+    }
+    if (!unary) {
+      stack.push({ tag: tagName, lowerCasedTag: tagName.toLowerCase(), attrs: attrs, start: match.start, end: match.end });
+      lastTag = tagName;
+    }
 
-      if (options.start) {
-        options.start(tagName, attrs, unary, match.start, match.end);
-      }
+    if (options.start) {
+      options.start(tagName, attrs, unary, match.start, match.end);
     }
   }
 

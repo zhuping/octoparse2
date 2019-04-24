@@ -20,3 +20,5 @@ export const isUnaryTag = makeMap(
 );
 
 export const isPlainTextElement = makeMap('script,style,textarea', true);
+
+export const isIgnoreNewlineTag = makeMap('pre,textarea', true);

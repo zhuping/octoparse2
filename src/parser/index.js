@@ -2,12 +2,10 @@ import { parseHTML } from './html-parser';
 
 function createASTElement(tag, attrs, parent) {
   return {
-    type: 1,
-    tag,
-    attrsList: attrs,
-    attrsMap: makeAttrsMap(attrs),
-    rawAttrsMap: {},
-    parent,
+    type: 'node',
+    name: tag,
+    attrs: makeAttrsMap(attrs),
+    // parent,
     children: []
   };
 }
@@ -17,16 +15,22 @@ export function parse(template, options) {
   let root;
   let currentParent;
 
+  function trimHTML(template) {
+    return template
+      .replace(/\r?\n+/g, '')
+      .replace(/\/\*.*?\*\//ig, '')
+      .replace(/&nbsp;/g, '\xa0')
+      .replace(/[ ]+</ig, '<');
+  }
+
   function closeElement(element) {
-    if (!stack.length && element !== root) {
-      if (currentParent) {
-        currentParent.children.push(element);
-        element.parent = currentParent;
-      }
+    if (currentParent) {
+      currentParent.children.push(element);
+      // element.parent = currentParent;
     }
   }
 
-  parseHTML(template, {
+  parseHTML(trimHTML(template), {
     start(tag, attrs, unary, start, end) {
       let element = createASTElement(tag, attrs, currentParent);
       if (!root) {
@@ -50,19 +54,32 @@ export function parse(template, options) {
     },
 
     chars(text, start, end) {
-      const children = currentParent.children;
-
-    },
-
-    comment(text, start, end) {
-      if (currentParent) {
-        const child = {
-          type: 3,
-          text,
-          isComment: true
-        };
-        currentParent.children.push(child);
+      if (!currentParent) {
+        if ((text = text.trim())) {
+          console.warn(`text "${text}" outside root element will be ignored.`);
+        }
+        return;
       }
+
+      const children = currentParent.children;
+      let child;
+
+      if (text && text !== ' ') {
+        child = {
+          type: 'text',
+          text
+        };
+      } else if (text !== ' ' || !children.length || children[children.length - 1].text !== ' ') {
+        child = {
+          type: 3,
+          text
+        };
+      }
+
+      if (child) {
+        children.push(child);
+      }
+
     }
   });
 
