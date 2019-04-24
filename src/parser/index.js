@@ -23,6 +23,10 @@ export function parse(template, options) {
       };
       if (attrs.length !== 0) {
         element.attrs = makeAttrsMap(attrs);
+
+        if (tag === 'img') {
+          element.attrs['style'] = 'max-width:100%;height:auto;vertical-align:top;';
+        }
       }
 
       if (unary) {
