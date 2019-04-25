@@ -9,7 +9,7 @@
     "dev:alipay": "rollup -w -c --environment PLATFORM:alipay",
     "dev:toutiao": "rollup -w -c --environment PLATFORM:toutiao",
     "build": "rollup -c",
-    "precommit": "lint-staged"
+    "prepublish": "yarn run build"
   },
   "lint-staged": {
     "src/**/*.js": [
@@ -36,5 +36,10 @@
     "lint-staged": "^8.1.5",
     "rollup-plugin-babel": "^4.3.2",
     "rollup-plugin-uglify": "^6.0.2"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
   }
 }
