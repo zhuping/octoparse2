@@ -7,7 +7,7 @@
       <text class="userinfo-nickname">{{userInfo.nickName}}</text>
     </block>
   </view>
-  <rich-text nodes="{{nodes}}" space></rich-text>
+  <rich-text nodes="{{nodes}}"></rich-text>
   <view class="usermotto">
     <text class="user-motto">{{motto}}</text>
   </view>

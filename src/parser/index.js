@@ -1,6 +1,6 @@
 import { parseHTML } from './html-parser';
 
-export function parse(template, options) {
+export function parse(template) {
   const stack = [];
   let root = {
     node: 'root',
@@ -16,17 +16,17 @@ export function parse(template, options) {
   }
 
   parseHTML(trimHTML(template), {
-    start(tag, attrs, unary, start, end) {
+    start(tag, attrs = [], unary/*, start, end*/) {
       let element = {
         type: 'node',
         name: tag
       };
-      if (attrs.length !== 0) {
-        element.attrs = makeAttrsMap(attrs);
 
-        if (tag === 'img') {
-          element.attrs['style'] = 'max-width:100%;height:auto;vertical-align:top;';
-        }
+      element.attrs = makeAttrsMap(attrs);
+      element.attrs['style'] = `margin:0;padding:0;${( element.attrs['style'] || '' )}`;
+
+      if (tag === 'img') {
+        element.attrs['style'] = `max-width:100%;height:auto;vertical-align:top;${( element.attrs['style'] || '' )}`;
       }
 
       if (unary) {
@@ -40,7 +40,7 @@ export function parse(template, options) {
       }
     },
 
-    end(tag, start, end) {
+    end(tag/*, start, end*/) {
       let element = stack.shift();
       if (element.name !== tag) {
         console.warn(`invalid state: mismatch end tag.`);
@@ -57,7 +57,7 @@ export function parse(template, options) {
       }
     },
 
-    chars(text, start, end) {
+    chars(text/*, start, end*/) {
       let child = {
         type: 'text',
         text

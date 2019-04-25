@@ -1,0 +1,2 @@
+<view class="intro">Welcome to Mini Program</view>
+<rich-text nodes="{{nodes}}"></rich-text>

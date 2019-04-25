@@ -4,9 +4,33 @@
   "description": "基于 rich-text 的跨平台富文本解析",
   "main": "index.js",
   "scripts": {
-    "dev": "rollup -w -c"
+    "dev:wechat": "rollup -w -c --environment PLATFORM:wechat",
+    "dev:swan": "rollup -w -c --environment PLATFORM:swan",
+    "dev:alipay": "rollup -w -c --environment PLATFORM:alipay",
+    "dev:toutiao": "rollup -w -c --environment PLATFORM:toutiao",
+    "build": "rollup -c",
+    "precommit": "lint-staged"
+  },
+  "lint-staged": {
+    "src/**/*.js": [
+      "eslint --fix --quiet",
+      "git add"
+    ]
   },
   "repository": "https://github.com/zhuping/octoparse2.git",
+  "keywords": [
+    "rich-text",
+    "alipay",
+    "swan",
+    "wechat",
+    "toutiao"
+  ],
   "author": "zhuping.zp",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "babel-eslint": "^10.0.1",
+    "eslint": "^5.16.0",
+    "husky": "^2.1.0",
+    "lint-staged": "^8.1.5"
+  }
 }

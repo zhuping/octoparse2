@@ -275,17 +275,17 @@ function parse(template, options) {
   }
 
   parseHTML(trimHTML(template), {
-    start(tag, attrs, unary, start, end) {
+    start(tag, attrs = [], unary, start, end) {
       let element = {
         type: 'node',
         name: tag
       };
-      if (attrs.length !== 0) {
-        element.attrs = makeAttrsMap(attrs);
 
-        if (tag === 'img') {
-          element.attrs['style'] = 'max-width:100%;height:auto;vertical-align:top;';
-        }
+      element.attrs = makeAttrsMap(attrs);
+      element.attrs['style'] = `margin:0;padding:0;${( element.attrs['style'] || '' )}`;
+
+      if (tag === 'img') {
+        element.attrs['style'] = `max-width:100%;height:auto;vertical-align:top;${( element.attrs['style'] || '' )}`;
       }
 
       if (unary) {
