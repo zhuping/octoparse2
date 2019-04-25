@@ -1,3 +1,6 @@
+import babel from 'rollup-plugin-babel';
+import { uglify } from 'rollup-plugin-uglify';
+
 const platform = process.env.PLATFORM;
 let filePath = platform ? 
     `example/${platform}/bundle.js` :
@@ -8,5 +11,11 @@ export default {
   output: {
     file: filePath,
     format: 'cjs'
-  }
+  },
+  plugins: [
+    babel({
+      exclude: 'node_modules/**',
+    }),
+    (!platform && uglify())
+  ],
 }

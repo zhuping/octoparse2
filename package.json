@@ -2,7 +2,7 @@
   "name": "octoparse2",
   "version": "0.0.1",
   "description": "基于 rich-text 的跨平台富文本解析",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "dev:wechat": "rollup -w -c --environment PLATFORM:wechat",
     "dev:swan": "rollup -w -c --environment PLATFORM:swan",
@@ -28,9 +28,13 @@
   "author": "zhuping.zp",
   "license": "MIT",
   "devDependencies": {
+    "@babel/core": "^7.4.3",
+    "@babel/preset-env": "^7.4.3",
     "babel-eslint": "^10.0.1",
     "eslint": "^5.16.0",
     "husky": "^2.1.0",
-    "lint-staged": "^8.1.5"
+    "lint-staged": "^8.1.5",
+    "rollup-plugin-babel": "^4.3.2",
+    "rollup-plugin-uglify": "^6.0.2"
   }
 }
